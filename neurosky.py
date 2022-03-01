@@ -27,6 +27,8 @@ from os.path import join as pjoin
 # import threading
 from multiprocessing import Process, Pipe
 
+from datetime import datetime
+
 ##########################################################################
 ##########################################################################
 
@@ -119,6 +121,7 @@ def on_raw(headset, rawvalue):
     data['raw_value'].append(eeg)
     data['attention'].append(attention)
     data['label'].append(label)
+    data['systemtime'].append(datetime.now().time()) # This was added
 
     # ADDED This
     # child_conn.send(data)
@@ -220,7 +223,8 @@ if __name__ == "__main__":
     data = {'timestamp': [],
             'raw_value': [],
             'attention': [],
-            'label':[]}
+            'label':[],
+            'systemtime':[]} # This was added
 
     print("Connecting...")
     headset = mindwave.Headset('/dev/tty.MindWaveMobile-SerialPo') # mac version

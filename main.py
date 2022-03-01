@@ -1,6 +1,7 @@
 import pygame
 import random
 import pandas as pd
+from datetime import datetime
 
 from multiprocessing import Process, Queue, Pipe
 import neurosky
@@ -14,7 +15,8 @@ record_storage = {
     "Time": [],
     "Block": [],
     "Action": [],
-    "Score": []
+    "Score": [],
+    "systemtime": []
 }
 pygame.font.init()
 
@@ -237,6 +239,7 @@ def clear_rows(grid, locked, score, event):
             record_storage['Block'].append(get_shape().letter)
             record_storage['Action'].append(event.type)
             record_storage['Score'].append(score)
+            record_storage['systemtime'].append(datetime.now().time())
             inc += 1
             # add positions to remove from locked
             ind = i
@@ -293,11 +296,13 @@ def update_record(isEnd, event, score):
         record_storage['Block'].append('END')
         record_storage['Action'].append(999)
         record_storage['Score'].append(score)
+        record_storage['systemtime'].append(datetime.now().time())
     else:
         record_storage['Time'].append(pygame.time.get_ticks())
         record_storage['Block'].append(get_shape().letter)
         record_storage['Action'].append(event.type)
         record_storage['Score'].append(score)
+        record_storage['systemtime'].append(datetime.now().time())
 
 
 def main():
@@ -317,7 +322,15 @@ def main():
     global score
     score = 0
 
-    while run:
+    # Calculate one minute from starttime
+    currenttime = datetime.now().strftime("%M%S")
+    minutetime = str(int(currenttime) + 100)
+
+    if len(minutetime) == 3:
+        minutetime = '0' + minutetime
+
+    # Either the game keeps running, or reached end time
+    while run and (datetime.now().strftime("%M%S") < minutetime):
 
         grid = create_grid(locked_positions)
         fall_time += clock.get_rawtime()
