@@ -1,10 +1,14 @@
 import pygame
 import random
 import pandas as pd
+import numpy as np
 from datetime import datetime
 
 from multiprocessing import Process, Queue, Pipe
 import neurosky
+
+# set random seed here
+np.random.seed(10)
 
 """
 10 x 20 square grid
@@ -206,10 +210,8 @@ def check_lost(positions):
 
 
 def get_shape():
-    global shapes, shape_colors, block_ind
-    # block_ind += 1
-    return Piece(5, 0, random.choice(shapes))
-    # return Piece(5, 0, block_set[block_ind])
+    global shapes, shape_colors
+    return Piece(5, 0, np.random.choice(shapes))
 
 
 def draw_text_middle(text, size, color, surface):
