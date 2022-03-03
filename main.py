@@ -292,7 +292,7 @@ def draw_window(surface):
     pygame.draw.rect(surface, (255, 0, 0), (top_left_x, top_left_y, play_width, play_height), 5)
     # pygame.display.update()
 
-def update_record(isEnd, event, score, block_increment):
+def update_record(isEnd, block, event, score, block_increment):
     if isEnd:
         record_storage['Time'].append(pygame.time.get_ticks())
         record_storage['Block'].append('END')
@@ -302,7 +302,7 @@ def update_record(isEnd, event, score, block_increment):
         record_storage['systemtime'].append(datetime.now().time())
     else:
         record_storage['Time'].append(pygame.time.get_ticks())
-        record_storage['Block'].append(get_shape().letter)
+        record_storage['Block'].append(block.letter) # get_shape().letter
         record_storage['Action'].append(event.type)
         record_storage['Score'].append(score)
         record_storage['Block Count'].append(block_increment)
@@ -359,7 +359,7 @@ def main():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 run = False
-                update_record(True, event, score, block_increment)
+                update_record(True, 'BEGIN', event, score, block_increment)
                 pygame.display.quit()
                 quit()
 
@@ -368,32 +368,32 @@ def main():
                     current_piece.x -= 1
                     if not valid_space(current_piece, grid):
                         current_piece.x += 1
-                    update_record(False, event, score, block_increment)
+                    update_record(False, current_piece, event, score, block_increment)
 
                 elif event.key == pygame.K_RIGHT:
                     current_piece.x += 1
                     if not valid_space(current_piece, grid):
                         current_piece.x -= 1
-                    update_record(False, event, score, block_increment)
+                    update_record(False, current_piece, event, score, block_increment)
                 elif event.key == pygame.K_UP:
                     # rotate shape
                     current_piece.rotation = current_piece.rotation + 1 % len(current_piece.shape)
                     if not valid_space(current_piece, grid):
                         current_piece.rotation = current_piece.rotation - 1 % len(current_piece.shape)
-                    update_record(False, event, score, block_increment)
+                    update_record(False, current_piece, event, score, block_increment)
 
                 if event.key == pygame.K_DOWN:
                     # move shape down
                     current_piece.y += 1
                     if not valid_space(current_piece, grid):
                         current_piece.y -= 1
-                    update_record(False, event, score, block_increment)
+                    update_record(False, current_piece, event, score, block_increment)
 
                 if event.key == pygame.K_SPACE:
                     while valid_space(current_piece, grid):
                         current_piece.y += 1
                     current_piece.y -= 1
-                    update_record(False, event, score, block_increment)
+                    update_record(False, current_piece, event, score, block_increment)
 
         shape_pos = convert_shape_format(current_piece)
 
@@ -429,7 +429,7 @@ def main():
             run = False
 
     draw_text_middle("You Lost. You can exit program now.", 40, (255,255,255), win)
-    update_record(True, event=000, score=score, block_increment=block_increment)
+    update_record(True, block='END', event=000, score=score, block_increment=block_increment)
     output = pd.DataFrame.from_dict(record_storage)
     output.to_csv("output.csv", index=False)
     pygame.display.update()
@@ -448,7 +448,7 @@ def main_menu():
                 run = False
 
             if event.type == pygame.KEYDOWN:
-                update_record(False, event=event, score=0, block_increment=default_increment) # TODO
+                update_record(False, block=get_shape(), event=event, score=0, block_increment=default_increment) # TODO
                 main()
     pygame.quit()
 
