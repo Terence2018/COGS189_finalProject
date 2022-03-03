@@ -292,18 +292,20 @@ def draw_window(surface):
     pygame.draw.rect(surface, (255, 0, 0), (top_left_x, top_left_y, play_width, play_height), 5)
     # pygame.display.update()
 
-def update_record(isEnd, event, score):
+def update_record(isEnd, event, score, block_increment):
     if isEnd:
         record_storage['Time'].append(pygame.time.get_ticks())
         record_storage['Block'].append('END')
         record_storage['Action'].append(999)
         record_storage['Score'].append(score)
+        record_storage['Block Count'].append(block_increment)
         record_storage['systemtime'].append(datetime.now().time())
     else:
         record_storage['Time'].append(pygame.time.get_ticks())
         record_storage['Block'].append(get_shape().letter)
         record_storage['Action'].append(event.type)
         record_storage['Score'].append(score)
+        record_storage['Block Count'].append(block_increment)
         record_storage['systemtime'].append(datetime.now().time())
 
 
@@ -322,6 +324,8 @@ def main():
     level_time = 0
     fall_speed = 0.27
     global score
+    global block_increment
+    block_increment = 0
     score = 0
 
     # Calculate one minute from starttime
@@ -356,7 +360,7 @@ def main():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 run = False
-                update_record(True, event, score)
+                update_record(True, event, score, block_increment)
                 pygame.display.quit()
                 quit()
 
@@ -365,32 +369,32 @@ def main():
                     current_piece.x -= 1
                     if not valid_space(current_piece, grid):
                         current_piece.x += 1
-                    update_record(False, event, score)
+                    update_record(False, event, score, block_increment)
 
                 elif event.key == pygame.K_RIGHT:
                     current_piece.x += 1
                     if not valid_space(current_piece, grid):
                         current_piece.x -= 1
-                    update_record(False, event, score)
+                    update_record(False, event, score, block_increment)
                 elif event.key == pygame.K_UP:
                     # rotate shape
                     current_piece.rotation = current_piece.rotation + 1 % len(current_piece.shape)
                     if not valid_space(current_piece, grid):
                         current_piece.rotation = current_piece.rotation - 1 % len(current_piece.shape)
-                    update_record(False, event, score)
+                    update_record(False, event, score, block_increment)
 
                 if event.key == pygame.K_DOWN:
                     # move shape down
                     current_piece.y += 1
                     if not valid_space(current_piece, grid):
                         current_piece.y -= 1
-                    update_record(False, event, score)
+                    update_record(False, event, score, block_increment)
 
                 if event.key == pygame.K_SPACE:
                     while valid_space(current_piece, grid):
                         current_piece.y += 1
                     current_piece.y -= 1
-                    update_record(False, event, score)
+                    update_record(False, event, score, block_increment)
 
         shape_pos = convert_shape_format(current_piece)
 
@@ -416,13 +420,16 @@ def main():
         draw_window(win)
         draw_next_shape(next_piece, win)
         pygame.display.update()
+        block_increment += 1
+        update_record(False, event, score, block_increment)
+
 
         # Check if user lost
         if check_lost(locked_positions):
             run = False
 
     draw_text_middle("You Lost. You can exit program now.", 40, (255,255,255), win)
-    update_record(True, event=000, score=score)
+    update_record(True, event=000, score=score, block_increment=block_increment)
     output = pd.DataFrame.from_dict(record_storage)
     output.to_csv("output.csv", index=False)
     pygame.display.update()
@@ -441,7 +448,7 @@ def main_menu():
                 run = False
 
             if event.type == pygame.KEYDOWN:
-                update_record(False, event=event, score=0)
+                update_record(False, event=event, score=0, block_increment=block_increment)
                 main()
     pygame.quit()
 
