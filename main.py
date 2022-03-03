@@ -4,11 +4,14 @@ import pandas as pd
 import numpy as np
 from datetime import datetime
 
-from multiprocessing import Process, Queue, Pipe
-import neurosky
+# from multiprocessing import Process, Queue, Pipe
+# import neurosky
 
 # set random seed here
 np.random.seed(10)
+
+# default block increment
+default_increment = 0
 
 """
 10 x 20 square grid
@@ -20,6 +23,7 @@ record_storage = {
     "Block": [],
     "Action": [],
     "Score": [],
+    "Block Count": [],
     "systemtime": []
 }
 pygame.font.init()
@@ -143,11 +147,6 @@ shapes_name = ['S', 'Z', 'I', 'O', 'J', 'L', 'T']
 shape_colors = [(0, 255, 0), (255, 0, 0), (0, 255, 255), (255, 255, 0), (255, 165, 0), (0, 0, 255), (128, 0, 128)]
 # index 0 - 6 represent shape
 
-# Order of Blocks
-# TODO random for now, might change later
-block_set = [O, L, T, Z, O, S, I, L, T, I, Z, S, O, L, S, T, Z, J, I, O, S, Z, J, L, I, T, Z, S]
-block_ind = -1
-
 class Piece(object):
     rows = 20  # y
     columns = 10  # x
@@ -230,7 +229,7 @@ def draw_grid(surface, row, col):
             pygame.draw.line(surface, (128,128,128), (sx + j * 30, sy), (sx + j * 30, sy + play_height))  # vertical lines
 
 
-def clear_rows(grid, locked, score, event):
+def clear_rows(grid, locked, score, event, block_increment):
     # need to see if row is clear the shift every other row above down one
     inc = 0
     for i in range(len(grid)-1,-1,-1):
@@ -242,6 +241,7 @@ def clear_rows(grid, locked, score, event):
             record_storage['Action'].append(event.type)
             record_storage['Score'].append(score)
             record_storage['systemtime'].append(datetime.now().time())
+            record_storage['Block Count'].append(block_increment)
             inc += 1
             # add positions to remove from locked
             ind = i
@@ -308,7 +308,6 @@ def update_record(isEnd, event, score, block_increment):
         record_storage['Block Count'].append(block_increment)
         record_storage['systemtime'].append(datetime.now().time())
 
-
 def main():
     global grid
 
@@ -325,7 +324,7 @@ def main():
     fall_speed = 0.27
     global score
     global block_increment
-    block_increment = 0
+    block_increment = 1
     score = 0
 
     # Calculate one minute from starttime
@@ -406,6 +405,8 @@ def main():
 
         # IF PIECE HIT GROUND
         if change_piece:
+            # Incremeny block count if block hits the ground
+            block_increment += 1
             for pos in shape_pos:
                 p = (pos[0], pos[1])
                 locked_positions[p] = current_piece.color
@@ -414,15 +415,14 @@ def main():
             change_piece = False
 
             # call four times to check for multiple clear rows
-            if clear_rows(grid, locked_positions, score, event):
+            if clear_rows(grid, locked_positions, score, event, block_increment):
                 print(score)
 
         draw_window(win)
         draw_next_shape(next_piece, win)
         pygame.display.update()
-        block_increment += 1
-        update_record(False, event, score, block_increment)
-
+        # block_increment += 1 # TODO
+        # update_record(False, event, score, block_increment) # TODO
 
         # Check if user lost
         if check_lost(locked_positions):
@@ -448,7 +448,7 @@ def main_menu():
                 run = False
 
             if event.type == pygame.KEYDOWN:
-                update_record(False, event=event, score=0, block_increment=block_increment)
+                update_record(False, event=event, score=0, block_increment=default_increment) # TODO
                 main()
     pygame.quit()
 
