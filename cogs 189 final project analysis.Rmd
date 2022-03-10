@@ -1,0 +1,109 @@
+---
+title: "COGS 189 Final Project Data Analysis"
+author: "Terence Ting"
+date: "3/5/2022"
+output: html_document
+---
+
+```{r, message=FALSE}
+library(ggplot2)
+library(dplyr)
+library(stringr)
+
+graph_eeg <- function(name, trial, plotBlocks=FALSE) {
+  
+  # Parsing the strings for the csv filenames
+  name.string <- paste(c(name, trial), collapse = "")
+  eeg.string <- paste(c(name.string, "eeg.csv"), collapse = "")
+  game.string <- paste(c(name.string, "output.csv"), collapse = "")
+  eeg.string <- paste(c("data/", eeg.string), collapse = "")
+  eeg.data <- read.csv(eeg.string)
+  game.string <- paste(c("data/", game.string), collapse = "")
+  game.data <- read.csv(game.string)
+  
+  # low and medium attention measures
+  if (name == 'terence') {
+    low <- 43.33333333
+    medium <- 52.33333333
+  } else if (name == 'yohan') {
+    low <- 33.33333333
+    medium <- 46
+  } else if (name == 'samarth') {
+    low <- 33.33333333 
+    medium <- 49.66666667 
+  } else if (name == 'aaron') {
+    low <- 26
+    medium <- 49.33333333
+  } else {
+    low <- 0
+    medium <- 0
+  }
+
+  # Merging the data on the shortened systemtime column
+  eeg.data$shorten <- str_trunc(eeg.data$systemtime, 9, side="right", ellipsis="")
+  game.data$shorten <- str_trunc(game.data$systemtime, 9, side="right", ellipsis="")
+  merged <- merge(eeg.data, game.data, by="shorten", all=TRUE)
+
+  # Obtaining the start and end timestamps 
+  game.start <- head(merged |> filter(Time == 0), 1) |> select(timestamp) |> pull()
+  game.end <- head(merged |> filter(Block == "END"), 1) |> select(timestamp) |> pull()
+  
+  # Obtaining the timestamps for the appearance of new blocks
+  game.blocks <- merged |>
+    select(timestamp, Block.Count) |> group_by(Block.Count) |>
+    summarize(timestamp = min(timestamp)) |> filter(Block.Count > 0) |> select(timestamp)
+  # height 
+  height <- dim(game.blocks)[1]
+
+  # Plotting the eeg and game data
+  plot <- merged |> 
+    ggplot(aes(x = timestamp, y=attention, color=Score)) +
+    # geom_point(aes(x=timestamp, y=attention, color=factor(Score))) +
+    geom_line() +
+    ylim(0, 100) +
+    geom_vline(xintercept = c(game.start, game.end), color='red') # Game start and End
+  
+  # plots the appearance of each new block
+  if (plotBlocks) {
+    for (i in 1:height) {
+      intercept <- game.blocks[i,] |> pull()
+      plot <- plot + geom_vline(xintercept = intercept, linetype='twodash', color='dark green', alpha=0.25)
+    }
+  }
+  
+  # adding low and medium attention measures to the plot
+  plot <- plot + geom_hline(yintercept = low, linetype='longdash', color='blue', alpha=0.25)
+  plot <- plot + geom_hline(yintercept = medium, linetype='longdash', color='dark blue', alpha=0.25)
+  
+  # adding labels
+  plot <- plot + labs(title = "Attention During One Minute Round of Tetris",
+                      subtitle =  paste(c(name, trial), collapse = " "),
+                      x = 'Timestamp', y = 'Attention Measure') +
+    theme(plot.title.position = 'plot') + 
+    theme_classic()
+  
+  # plots the main plot
+  plot
+}
+```
+
+parameters:
+
+- name
+- trial
+- whether or not to show blocks
+
+```{r}
+for (i in 1:3) {
+  print(graph_eeg("terence", i, TRUE))
+}
+for (i in 1:3) {
+  print(graph_eeg("yohan", i, TRUE))
+}
+for (i in 1:3) {
+  print(graph_eeg("samarth", i, TRUE))
+}
+for (i in 1:3) {
+  print(graph_eeg("aaron", i, TRUE))
+}
+```
