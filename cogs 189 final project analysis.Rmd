@@ -9,7 +9,10 @@ output: html_document
 library(ggplot2)
 library(dplyr)
 library(stringr)
+options(dplyr.summarise.inform = FALSE)
+```
 
+```{r, message=FALSE}
 graph_eeg <- function(name, trial, plotBlocks=FALSE) {
   
   # Parsing the strings for the csv filenames
@@ -43,6 +46,8 @@ graph_eeg <- function(name, trial, plotBlocks=FALSE) {
   eeg.data$shorten <- str_trunc(eeg.data$systemtime, 9, side="right", ellipsis="")
   game.data$shorten <- str_trunc(game.data$systemtime, 9, side="right", ellipsis="")
   merged <- merge(eeg.data, game.data, by="shorten", all=TRUE)
+  # Zeroing out the timestamp
+  merged$timestamp <- merged$timestamp - min(merged$timestamp)
 
   # Obtaining the start and end timestamps 
   game.start <- head(merged |> filter(Time == 0), 1) |> select(timestamp) |> pull()
@@ -54,20 +59,63 @@ graph_eeg <- function(name, trial, plotBlocks=FALSE) {
     summarize(timestamp = min(timestamp)) |> filter(Block.Count > 0) |> select(timestamp)
   # height 
   height <- dim(game.blocks)[1]
+  
+  # Obtaining the timestamps for the different scores 
+  score.10 <- merged |>
+    filter(Score == 10) |> group_by(Score, Block) |>
+    summarize(timestamp = min(timestamp), Score=Score) |>
+    distinct(timestamp, Score, Block) |> pull(timestamp)
+  score.20 <- merged |>
+    filter(Score == 20) |> group_by(Score, Block) |>
+    summarize(timestamp = min(timestamp), Score=Score) |>
+    distinct(timestamp, Score, Block) |> pull(timestamp)
+  score.30 <- merged |>
+    filter(Score == 30) |> group_by(Score, Block) |>
+    summarize(timestamp = min(timestamp), Score=Score) |>
+    distinct(timestamp, Score, Block) |> pull(timestamp)
+  score.40 <- merged |>
+    filter(Score == 40) |> group_by(Score, Block) |>
+    summarize(timestamp = min(timestamp), Score=Score) |>
+    distinct(timestamp, Score, Block) |> pull(timestamp)
 
   # Plotting the eeg and game data
   plot <- merged |> 
-    ggplot(aes(x = timestamp, y=attention, color=Score)) +
-    # geom_point(aes(x=timestamp, y=attention, color=factor(Score))) +
+    ggplot(aes(x = timestamp, y=attention)) +
     geom_line() +
     ylim(0, 100) +
-    geom_vline(xintercept = c(game.start, game.end), color='red') # Game start and End
-  
+    xlim(game.start, game.end) # Game start and End
+
   # plots the appearance of each new block
   if (plotBlocks) {
     for (i in 1:height) {
       intercept <- game.blocks[i,] |> pull()
       plot <- plot + geom_vline(xintercept = intercept, linetype='twodash', color='dark green', alpha=0.25)
+    }
+  }
+  
+  # Plotting the timestamps where players scored points
+  if (length(score.10) > 0) {
+    for (i in 1:length(score.10)) {
+      intercept <- score.10[i]
+      plot <- plot + geom_vline(xintercept = intercept, color="red")
+    }
+  }
+  if (length(score.20) > 0) {
+    for (i in 1:length(score.20)) {
+      intercept <- score.20[i]
+      plot <- plot + geom_vline(xintercept = intercept, color="orange")
+    }
+  }
+  if (length(score.30) > 0) {
+    for (i in 1:length(score.30)) {
+      intercept <- score.30[i]
+      plot <- plot + geom_vline(xintercept = intercept, color="yellow")
+    }
+  }
+  if (length(score.40) > 0) {
+    for (i in 1:length(score.40)) {
+      intercept <- score.40[i]
+      plot <- plot + geom_vline(xintercept = intercept, color="green")
     }
   }
   
@@ -81,9 +129,6 @@ graph_eeg <- function(name, trial, plotBlocks=FALSE) {
                       x = 'Timestamp', y = 'Attention Measure') +
     theme(plot.title.position = 'plot') + 
     theme_classic()
-  
-  # plots the main plot
-  plot
 }
 ```
 
@@ -93,7 +138,7 @@ parameters:
 - trial
 - whether or not to show blocks
 
-```{r}
+```{r, warning=FALSE}
 for (i in 1:3) {
   print(graph_eeg("terence", i, TRUE))
 }
