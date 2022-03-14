@@ -53,6 +53,9 @@ graph_eeg <- function(name, trial, plotBlocks=FALSE) {
   game.start <- head(merged |> filter(Time == 0), 1) |> select(timestamp) |> pull()
   game.end <- head(merged |> filter(Block == "END"), 1) |> select(timestamp) |> pull()
   
+  # average attention
+  avg.attention <- mean(merged$attention)
+  
   # Obtaining the timestamps for the appearance of new blocks
   game.blocks <- merged |>
     select(timestamp, Block.Count) |> group_by(Block.Count) |>
@@ -122,6 +125,8 @@ graph_eeg <- function(name, trial, plotBlocks=FALSE) {
   # adding low and medium attention measures to the plot
   plot <- plot + geom_hline(yintercept = low, linetype='longdash', color='blue', alpha=0.25)
   plot <- plot + geom_hline(yintercept = medium, linetype='longdash', color='dark blue', alpha=0.25)
+  # adding average attention measure to the plot
+  plot <- plot + geom_hline(yintercept = avg.attention, color="blue")
   
   # adding labels
   plot <- plot + labs(title = "Attention During One Minute Round of Tetris",
@@ -143,10 +148,10 @@ for (i in 1:3) {
   print(graph_eeg("terence", i, TRUE))
 }
 for (i in 1:3) {
-  print(graph_eeg("yohan", i, TRUE))
+  print(graph_eeg("samarth", i, TRUE))
 }
 for (i in 1:3) {
-  print(graph_eeg("samarth", i, TRUE))
+  print(graph_eeg("yohan", i, TRUE))
 }
 for (i in 1:3) {
   print(graph_eeg("aaron", i, TRUE))
